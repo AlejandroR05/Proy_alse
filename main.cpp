@@ -5,6 +5,7 @@
 #include "sensores.h"
 
 int main() {
+    while (true) {
     srand(static_cast<unsigned int>(time(nullptr))); // Inicialización de la semilla para generar números aleatorios
 
     Sensor_Temp sensorTemp; // Creación de un objeto de la clase Sensor_Temp
@@ -128,6 +129,11 @@ int main() {
 
     sqlite3_finalize(stmt); // Finaliza la consulta
     sqlite3_close(db); // Cierra la base de datos
+
+std::clock_t start_time = std::clock();
+        while ((std::clock() - start_time) / CLOCKS_PER_SEC < 5)
+            ;
+    }
 
     return 0;
 }
