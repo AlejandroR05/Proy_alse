@@ -1,182 +1,133 @@
 #include <iostream>
-
-using namespace std;
-
-#ifndef SENSOR_H
-#define SENSOR_H
-
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <cmath>
-#include <chrono>
-#include <thread>
+#include <cstdlib>
+#include <ctime>
 #include <sqlite3.h>
+#include "sensores.h"
 
+int main() {
+    srand(static_cast<unsigned int>(time(nullptr))); // Inicialización de la semilla para generar números aleatorios
 
-class medicion{};
+    Sensor_Temp sensorTemp; // Creación de un objeto de la clase Sensor_Temp
+    Sensor_Hum sensorHum; // Creación de un objeto de la clase Sensor_Hum
+    Sensor_Precip sensorPrecip; // Creación de un objeto de la clase Sensor_Precip
+    Sensor_Intensidad sensorIntensidad; // Creación de un objeto de la clase Sensor_Intensidad
 
+    sensorTemp.actualizar(); // Actualiza el dato del sensor de temperatura con un nuevo valor aleatorio
+    sensorHum.actualizar(); // Actualiza el dato del sensor de humedad con un nuevo valor aleatorio
+    sensorPrecip.actualizar(); // Actualiza el dato del sensor de precipitación con un nuevo valor aleatorio
+    sensorIntensidad.actualizar(); // Actualiza el dato del sensor de intensidad con un nuevo valor aleatorio
 
-class Sensor {
-public:
-    double _dato;
-    int _lim;
+    Medicion med(sensorTemp.leerDato(), sensorHum.leerDato(), sensorPrecip.leerDato(), sensorIntensidad.leerDato()); // Crea un objeto Medicion con los datos de los sensores
 
-    Sensor(int lim = 100) {
-        _dato = 0.0;
-        _lim = lim;
-    }
+    cout << med.mostrarDatos() << endl; // Muestra los datos de la medición en la consola
 
-    double leerDato() {
-        return _dato;
-    }
+    sqlite3* db; // Puntero a la base de datos SQLite
+    int rc = sqlite3_open("db_medidas_sensores.db", &db); // Abre la base de datos
 
-    virtual void actualizar() {
-        _dato = (rand() % _lim * 10) / 10.0;
-    }
-
-    std::string mostrarDato() {
-        return std::to_string(_dato);
-    }
-
-    void acumularEn(double d) {
-        _dato += d;
-    }
-
-    double promediarEntre(double n) {
-        return _dato / n;
-    }
-};
-#endif // SENSOR_H
-
-class Medicion {
-private:
-    double _datoTemp;
-    double _datoHum;
-    double _datoPrecip;
-    double _datoIntensidad;
-
-public:
-    Medicion(double datoTemp = 0.0, double datoHum = 0.0, double datoPrecip = 0.0, double datoIntensidad = 0.0) {
-        _datoTemp = datoTemp;
-        _datoHum = datoHum;
-        _datoPrecip = datoPrecip;
-        _datoIntensidad = datoIntensidad;
-    }
-
-    void actualizar(double datoTemp, double datoHum, double datoPrecip, double datoIntensidad) {
-        _datoTemp = datoTemp;
-        _datoHum = datoHum;
-        _datoPrecip = datoPrecip;
-        _datoIntensidad = datoIntensidad;
-    }
-
-    double obtenerDatoTemp() {
-        return _datoTemp;
-    }
-
-    double obtenerDatoHum() {
-        return _datoHum;
-    }
-
-    double obtenerDatoPrecip() {
-        return _datoPrecip;
-    }
-
-    double obtenerDatoIntensidad() {
-        return _datoIntensidad;
-    }
-
-    std::string mostrarDatos() {
-        std::stringstream ss;
-        ss << "Dato de temperatura: " << _datoTemp << std::endl;
-        ss << "Dato de humedad: " << _datoHum << std::endl;
-        ss << "Dato de precipitación: " << _datoPrecip << std::endl;
-        ss << "Dato de intensidad: " << _datoIntensidad << std::endl;
-
-        return ss.str();
-    }
-};
-
-
-class Sensor_Temp: public Sensor{
-
-    public:
-    int lim_t;
-    Sensor_Temp(int lim = 45) : Sensor(lim) {
-    }
-    void actualizar() override {
-        _dato = rand() % 36 + 10;
-    }
-};
-
-class Sensor_Hum: public Sensor{
-    public:
-    Sensor_Hum(int tamano = 12, int lim = 100) : Sensor(lim) {
-    }
-    void actualizar() override {
-        _dato = rand() % 101;
-    }
-};
-
-class Sensor_precip: public Sensor{
-    public:
-    Sensor_precip( int lim = 50) : Sensor(lim) {
-    }
-    void actualizar() override {
-        _dato = rand() % 51;
-    }
-};
-
-class Sensor_intensidad: public Sensor{
-    public:
-    Sensor_intensidad(int lim = 2000) : Sensor(lim) {
-    }
-    void actualizar() override {
-         _dato = rand() % 2001;
-    }
-};
-
-
-int main()
-{
-
-    srand(static_cast<unsigned int>(time(nullptr)));
-    Sensor_Temp sensorTemp;
-    Sensor_Hum sensorHum;
-    Sensor_precip sensorPrecip;
-    Sensor_intensidad sensorIntensidad;
-    sensorTemp.actualizar();
-    sensorHum.actualizar();
-    sensorPrecip.actualizar();
-    sensorIntensidad.actualizar();
-    Medicion med(sensorTemp.leerDato(), sensorHum.leerDato(), sensorPrecip.leerDato(), sensorIntensidad.leerDato());
-
-    med.actualizar(sensorTemp.leerDato(), sensorHum.leerDato(), sensorPrecip.leerDato(), sensorIntensidad.leerDato());
-    cout << med.mostrarDatos();
-
-    sqlite3* db;
-    int rc = sqlite3_open("db_medidas_sensores.db", &db);
-
-     if(rc != SQLITE_OK) {
-        std::cout<<"Error al abrir la base de datos:"<< sqlite3_errmsg(db) << std::endl;
+    if (rc != SQLITE_OK) {
+        cout << "Error al abrir la base de datos: " << sqlite3_errmsg(db) << endl; // Muestra el mensaje de error si no se pudo abrir la base de datos
         return 1;
     }
 
-        // Esto inserta los datos
-        const char* insertQuery = "INSERT INTO Min_Prom_Max (Prom_temp, Prom_Humedad, Prom_Precipitacion, Prom_Lumen) VALUES ('sensorTemp.leerDato()', 'sensorHum.leerDato()', 'sensorPrecip.leerDato()', 'sensorIntensidad.leerDato()');";
-        rc = sqlite3_exec(db, insertQuery, nullptr, 0, nullptr);
+    const char* createQuery = "CREATE TABLE IF NOT EXISTS Min_Prom_Max (Fecha_Hora TEXT, Min_Temp REAL, Prom_temp REAL, Max_Temp REAL, Min_Humedad REAL, Prom_Humedad REAL, Max_Humedad REAL, Min_Precipitacion REAL, Prom_Precipitacion REAL, Max_Precipitacion REAL, Min_Lumen REAL, Prom_Lumen REAL, Max_Lumen REAL);";
+    rc = sqlite3_exec(db, createQuery, nullptr, 0, nullptr); // Crea la tabla en la base de datos si no existe
 
     if (rc != SQLITE_OK) {
-        std::cout << "Error al insertar datos: " << sqlite3_errmsg(db) << std::endl;
+        cout << "Error al crear la tabla: " << sqlite3_errmsg(db) << endl; // Muestra el mensaje de error si no se pudo crear la tabla
+        sqlite3_close(db);
+        return 1;
+    }
+
+    const char* insertQuery = "INSERT INTO Min_Prom_Max (Fecha_Hora, Min_Temp, Prom_temp, Max_Temp, Min_Humedad, Prom_Humedad, Max_Humedad, Min_Precipitacion, Prom_Precipitacion, Max_Precipitacion, Min_Lumen, Prom_Lumen, Max_Lumen) VALUES (datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    sqlite3_stmt* stmt;
+    rc = sqlite3_prepare_v2(db, insertQuery, -1, &stmt, nullptr); // Prepara la consulta de inserción
+
+    if (rc != SQLITE_OK) {
+        cout << "Error al preparar la consulta: " << sqlite3_errmsg(db) << endl; // Muestra el mensaje de error si no se pudo preparar la consulta
+        sqlite3_close(db);
+        return 1;
+    }
+
+    double promTemp = 0.0, promHum = 0.0, promPrecip = 0.0, promLumen = 0.0;
+    double minTemp = sensorTemp.leerDato(), maxTemp = sensorTemp.leerDato(); // Inicializa las variables mínimas y máximas con los datos actuales de temperatura
+    double minHum = sensorHum.leerDato(), maxHum = sensorHum.leerDato(); // Inicializa las variables mínimas y máximas con los datos actuales de humedad
+    double minPrecip = sensorPrecip.leerDato(), maxPrecip = sensorPrecip.leerDato(); // Inicializa las variables mínimas y máximas con los datos actuales de precipitación
+    double minLumen = sensorIntensidad.leerDato(), maxLumen = sensorIntensidad.leerDato(); // Inicializa las variables mínimas y máximas con los datos actuales de intensidad de luz
+    int numMediciones = 1; // Inicializa el contador de mediciones
+
+    for (int i = 1; i < 10; i++) { // Realiza 9 mediciones adicionales
+        sensorTemp.actualizar(); // Actualiza el dato del sensor de temperatura con un nuevo valor aleatorio
+        sensorHum.actualizar(); // Actualiza el dato del sensor de humedad con un nuevo valor aleatorio
+        sensorPrecip.actualizar(); // Actualiza el dato del sensor de precipitación con un nuevo valor aleatorio
+        sensorIntensidad.actualizar(); // Actualiza el dato del sensor de intensidad con un nuevo valor aleatorio
+
+        double datoTemp = sensorTemp.leerDato(); // Obtiene el dato actual del sensor de temperatura
+        double datoHum = sensorHum.leerDato(); // Obtiene el dato actual del sensor de humedad
+        double datoPrecip = sensorPrecip.leerDato(); // Obtiene el dato actual del sensor de precipitación
+        double datoLumen = sensorIntensidad.leerDato(); // Obtiene el dato actual del sensor de intensidad
+
+        // Actualizar valores mínimos y máximos
+        if (datoTemp < minTemp) {
+            minTemp = datoTemp;
+        }
+        if (datoTemp > maxTemp) {
+            maxTemp = datoTemp;
+        }
+
+        if (datoHum < minHum) {
+            minHum = datoHum;
+        }
+        if (datoHum > maxHum) {
+            maxHum = datoHum;
+        }
+
+        if (datoPrecip < minPrecip) {
+            minPrecip = datoPrecip;
+        }
+        if (datoPrecip > maxPrecip) {
+            maxPrecip = datoPrecip;
+        }
+
+        if (datoLumen < minLumen) {
+            minLumen = datoLumen;
+        }
+        if (datoLumen > maxLumen) {
+            maxLumen = datoLumen;
+        }
+
+        // Actualizar promedios
+        promTemp = ((promTemp * numMediciones) + datoTemp) / (numMediciones + 1);
+        promHum = ((promHum * numMediciones) + datoHum) / (numMediciones + 1);
+        promPrecip = ((promPrecip * numMediciones) + datoPrecip) / (numMediciones + 1);
+        promLumen = ((promLumen * numMediciones) + datoLumen) / (numMediciones + 1);
+
+        numMediciones++;
+    }
+
+    sqlite3_bind_double(stmt, 1, minTemp); // Asigna el valor mínimo de temperatura a la primera columna de la consulta
+    sqlite3_bind_double(stmt, 2, promTemp); // Asigna el valor promedio de temperatura a la segunda columna de la consulta
+    sqlite3_bind_double(stmt, 3, maxTemp); // Asigna el valor máximo de temperatura a la tercera columna de la consulta
+    sqlite3_bind_double(stmt, 4, minHum); // Asigna el valor mínimo de humedad a la cuarta columna de la consulta
+    sqlite3_bind_double(stmt, 5, promHum); // Asigna el valor promedio de humedad a la quinta columna de la consulta
+    sqlite3_bind_double(stmt, 6, maxHum); // Asigna el valor máximo de humedad a la sexta columna de la consulta
+    sqlite3_bind_double(stmt, 7, minPrecip); // Asigna el valor mínimo de precipitación a la séptima columna de la consulta
+    sqlite3_bind_double(stmt, 8, promPrecip); // Asigna el valor promedio de precipitación a la octava columna de la consulta
+    sqlite3_bind_double(stmt, 9, maxPrecip); // Asigna el valor máximo de precipitación a la novena columna de la consulta
+    sqlite3_bind_double(stmt, 10, minLumen); // Asigna el valor mínimo de intensidad de luz a la décima columna de la consulta
+    sqlite3_bind_double(stmt, 11, promLumen); // Asigna el valor promedio de intensidad de luz a la undécima columna de la consulta
+    sqlite3_bind_double(stmt, 12, maxLumen); // Asigna el valor máximo de intensidad de luz a la duodécima columna de la consulta
+
+    rc = sqlite3_step(stmt); // Ejecuta la consulta de inserción
+
+    if (rc != SQLITE_DONE) {
+        cout << "Error al ejecutar la consulta: " << sqlite3_errmsg(db) << endl; // Muestra el mensaje de error si no se pudo ejecutar la consulta
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        return 1;
+    }
+
+    sqlite3_finalize(stmt); // Finaliza la consulta
+    sqlite3_close(db); // Cierra la base de datos
+
+    return 0;
 }
-    else {
-    std::cout << "Datos insertados correctamente." << std::endl;
-}
-
-sqlite3_close(db);
-
-return 0;
-}
-
-
